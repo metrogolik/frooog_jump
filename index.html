@@ -9,7 +9,7 @@
 body {
     margin: 0;
     overflow: hidden;
-    background: #87CEEB;
+    font-family: Arial;
 }
 
 canvas {
@@ -27,7 +27,7 @@ canvas {
     z-index: 10;
 }
 
-#gyroBtn {
+#gyroButton {
     position: fixed;
     bottom: 20px;
     left: 50%;
@@ -45,142 +45,151 @@ canvas {
 <body>
 
 <div id="score">0</div>
-<button id="gyroBtn">Включить гироскоп</button>
-<canvas id="game"></canvas>
+<button id="gyroButton">Включить управление наклоном</button>
+<canvas id="gameCanvas"></canvas>
 
 <script>
-const canvas = document.getElementById("game");
+const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreDisplay = document.getElementById("score");
-const gyroBtn = document.getElementById("gyroBtn");
+const gyroButton = document.getElementById("gyroButton");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let gravity = 0.5;
-let jumpForce = -15;
+let jumpPower = -15;
 let score = 0;
+let lastPlatformY = 0;
+
+let background = new Image();
+background.src = "background.png"; // ← ФОН
+
+let playerStand = new Image();
+playerStand.src = "player_stand.png"; // ← ПЕРСОНАЖ НА ПЛАТФОРМЕ
+
+let playerFly = new Image();
+playerFly.src = "player_fly.png"; // ← ПЕРСОНАЖ В ПРЫЖКЕ
 
 let player = {
     x: canvas.width / 2,
-    y: canvas.height - 120,
+    y: canvas.height - 100,
     width: 50,
     height: 50,
-    velX: 0,
-    velY: 0,
-    facing: 1
+    velocityY: 0,
+    velocityX: 0,
+    facing: 1 // 1 = вправо, -1 = влево
 };
 
 let platforms = [];
-const platformWidth = 80;
-const platformHeight = 15;
-const platformGap = 120;
+let platformWidth = 80;
+let platformHeight = 15;
+let platformGap = 120;
 
-// --- ЗАГРУЗКА КАРТИНОК ---
-let playerStand = new Image();
-let playerFly = new Image();
+class Platform {
+    constructor(x, y, type="static") {
+        this.x = x;
+        this.y = y;
+        this.width = platformWidth;
+        this.height = platformHeight;
+        this.type = type;
+        this.broken = false;
+        this.direction = 1;
+    }
 
-playerStand.src = "player_stand.png";
-playerFly.src = "player_fly.png";
+    update() {
+        if (this.type === "moving") {
+            this.x += 2 * this.direction;
+            if (this.x <= 0 || this.x + this.width >= canvas.width) {
+                this.direction *= -1;
+            }
+        }
+    }
 
-let imagesLoaded = 0;
+    draw() {
+        if (this.type === "static") ctx.fillStyle = "green";
+        if (this.type === "moving") ctx.fillStyle = "orange";
+        if (this.type === "break") ctx.fillStyle = "red";
 
-function startIfReady() {
-    imagesLoaded++;
-    if (imagesLoaded === 2) {
-        init();
-        gameLoop();
+        if (!this.broken) {
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
     }
 }
 
-playerStand.onload = startIfReady;
-playerFly.onload = startIfReady;
-
-// Если ошибка загрузки — всё равно запускаем игру
-playerStand.onerror = startIfReady;
-playerFly.onerror = startIfReady;
-
-// --- ПЛАТФОРМЫ ---
 function createPlatforms() {
     platforms = [];
     let y = canvas.height;
-
     while (y > 0) {
         let x = Math.random() * (canvas.width - platformWidth);
-        platforms.push({
-            x: x,
-            y: y,
-            width: platformWidth,
-            height: platformHeight
-        });
+        platforms.push(new Platform(x, y));
         y -= platformGap;
     }
 }
 
-// --- ИНИЦИАЛИЗАЦИЯ ---
-function init() {
-    createPlatforms();
-}
-
-// --- ИГРОВОЙ ЦИКЛ ---
-function gameLoop() {
-
+function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Гравитация
-    player.velY += gravity;
-    player.y += player.velY;
-    player.x += player.velX;
+    // ФОН
+    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-    // Зацикливание по горизонтали
+    player.velocityY += gravity;
+    player.y += player.velocityY;
+    player.x += player.velocityX;
+
+    if (player.velocityX > 0) player.facing = 1;
+    if (player.velocityX < 0) player.facing = -1;
+
     if (player.x > canvas.width) player.x = 0;
-    if (player.x + player.width < 0) player.x = canvas.width;
+    if (player.x < 0) player.x = canvas.width;
 
-    // Определяем направление
-    if (player.velX > 0) player.facing = 1;
-    if (player.velX < 0) player.facing = -1;
-
-    // Столкновение с платформами
-    platforms.forEach(p => {
+    platforms.forEach(platform => {
+        platform.update();
 
         if (
-            player.velY > 0 &&
-            player.x + player.width > p.x &&
-            player.x < p.x + p.width &&
-            player.y + player.height > p.y &&
-            player.y + player.height < p.y + p.height
+            player.velocityY > 0 &&
+            player.x + player.width > platform.x &&
+            player.x < platform.x + platform.width &&
+            player.y + player.height > platform.y &&
+            player.y + player.height < platform.y + platform.height &&
+            !platform.broken
         ) {
-            player.velY = jumpForce;
-            score++;
-            scoreDisplay.innerText = score;
+            player.velocityY = jumpPower;
+
+            if (platform.y < lastPlatformY || lastPlatformY === 0) {
+                score++;
+                scoreDisplay.innerText = score;
+                lastPlatformY = platform.y;
+            }
+
+            if (platform.type === "break") {
+                platform.broken = true;
+            }
         }
 
-        ctx.fillStyle = "green";
-        ctx.fillRect(p.x, p.y, p.width, p.height);
+        platform.draw();
     });
 
-    // Камера вверх
+    // камера
     if (player.y < canvas.height / 2) {
-
         let diff = canvas.height / 2 - player.y;
         player.y = canvas.height / 2;
 
-        platforms.forEach(p => {
-            p.y += diff;
-
-            if (p.y > canvas.height) {
-                p.y = 0;
-                p.x = Math.random() * (canvas.width - platformWidth);
+        platforms.forEach(platform => {
+            platform.y += diff;
+            if (platform.y > canvas.height) {
+                platform.y = 0;
+                platform.x = Math.random() * (canvas.width - platformWidth);
             }
         });
     }
 
-    // Рисуем игрока
+    // СПРАЙТ
     ctx.save();
     ctx.translate(player.x + player.width/2, player.y + player.height/2);
     ctx.scale(player.facing, 1);
 
-    let sprite = player.velY > 0 ? playerFly : playerStand;
+    let sprite = player.velocityY > 0 ? playerFly : playerStand;
 
     ctx.drawImage(
         sprite,
@@ -192,39 +201,38 @@ function gameLoop() {
 
     ctx.restore();
 
-    // Game Over
     if (player.y > canvas.height) {
         alert("Game Over! Score: " + score);
         location.reload();
     }
 
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(update);
 }
 
-// --- ГИРОСКОП ---
-gyroBtn.addEventListener("click", () => {
-
+// iOS гироскоп
+gyroButton.addEventListener("click", () => {
     if (typeof DeviceOrientationEvent.requestPermission === "function") {
-
         DeviceOrientationEvent.requestPermission()
-            .then(response => {
-                if (response === "granted") {
-                    window.addEventListener("deviceorientation", handleTilt);
-                    gyroBtn.style.display = "none";
+            .then(permissionState => {
+                if (permissionState === "granted") {
+                    window.addEventListener("deviceorientation", handleOrientation);
+                    gyroButton.style.display = "none";
                 }
-            });
-
+            })
+            .catch(console.error);
     } else {
-        window.addEventListener("deviceorientation", handleTilt);
-        gyroBtn.style.display = "none";
+        window.addEventListener("deviceorientation", handleOrientation);
+        gyroButton.style.display = "none";
     }
-
 });
 
-function handleTilt(e) {
-    player.velX = e.gamma * 0.3;
+function handleOrientation(event) {
+    let tilt = event.gamma;
+    player.velocityX = tilt * 0.3;
 }
-</script>
 
+createPlatforms();
+update();
+</script>
 </body>
 </html>
