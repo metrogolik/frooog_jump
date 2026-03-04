@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Frooog Jump</title>
+<title>Doodle Jump Mobile</title>
 
 <style>
 body {
     margin: 0;
     overflow: hidden;
-    font-family: Arial;
+    background: #87CEEB;
 }
 
 canvas {
@@ -27,7 +27,7 @@ canvas {
     z-index: 10;
 }
 
-#gyroButton {
+#gyroBtn {
     position: fixed;
     bottom: 20px;
     left: 50%;
@@ -45,154 +45,142 @@ canvas {
 <body>
 
 <div id="score">0</div>
-<button id="gyroButton">Включить управление наклоном</button>
-<canvas id="gameCanvas"></canvas>
+<button id="gyroBtn">Включить гироскоп</button>
+<canvas id="game"></canvas>
 
 <script>
-    window.onerror = function(message, source, lineno, colno, error) {
-    alert("Ошибка: " + message);
-};
-const canvas = document.getElementById("gameCanvas");
+const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const scoreDisplay = document.getElementById("score");
-const gyroButton = document.getElementById("gyroButton");
+const gyroBtn = document.getElementById("gyroBtn");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 let gravity = 0.5;
-let jumpPower = -15;
+let jumpForce = -15;
 let score = 0;
-let lastPlatformY = 0;
-
-let background = new Image();
-background.src = "background.png"; // ← ФОН
-
-let player_stand = new Image();
-player_stand.src = "player_stand.png"; // ← ПЕРСОНАЖ НА ПЛАТФОРМЕ
-
-let player_fly = new Image();
-player_fly.src = "player_fly.png"; // ← ПЕРСОНАЖ В ПРЫЖКЕ
 
 let player = {
     x: canvas.width / 2,
-    y: canvas.height - 100,
+    y: canvas.height - 120,
     width: 50,
     height: 50,
-    velocityY: 0,
-    velocityX: 0,
-    facing: 1 // 1 = вправо, -1 = влево
+    velX: 0,
+    velY: 0,
+    facing: 1
 };
 
 let platforms = [];
-let platformWidth = 80;
-let platformHeight = 15;
-let platformGap = 120;
+const platformWidth = 80;
+const platformHeight = 15;
+const platformGap = 120;
 
-class Platform {
-    constructor(x, y, type="static") {
-        this.x = x;
-        this.y = y;
-        this.width = platformWidth;
-        this.height = platformHeight;
-        this.type = type;
-        this.broken = false;
-        this.direction = 1;
-    }
+// --- ЗАГРУЗКА КАРТИНОК ---
+let playerStand = new Image();
+let playerFly = new Image();
 
-    update() {
-        if (this.type === "moving") {
-            this.x += 2 * this.direction;
-            if (this.x <= 0 || this.x + this.width >= canvas.width) {
-                this.direction *= -1;
-            }
-        }
-    }
+playerStand.src = "player_stand.png";
+playerFly.src = "player_fly.png";
 
-    draw() {
-        if (this.type === "static") ctx.fillStyle = "green";
-        if (this.type === "moving") ctx.fillStyle = "orange";
-        if (this.type === "break") ctx.fillStyle = "red";
+let imagesLoaded = 0;
 
-        if (!this.broken) {
-            ctx.fillRect(this.x, this.y, this.width, this.height);
-        }
+function startIfReady() {
+    imagesLoaded++;
+    if (imagesLoaded === 2) {
+        init();
+        gameLoop();
     }
 }
 
+playerStand.onload = startIfReady;
+playerFly.onload = startIfReady;
+
+// Если ошибка загрузки — всё равно запускаем игру
+playerStand.onerror = startIfReady;
+playerFly.onerror = startIfReady;
+
+// --- ПЛАТФОРМЫ ---
 function createPlatforms() {
     platforms = [];
     let y = canvas.height;
+
     while (y > 0) {
         let x = Math.random() * (canvas.width - platformWidth);
-        platforms.push(new Platform(x, y));
+        platforms.push({
+            x: x,
+            y: y,
+            width: platformWidth,
+            height: platformHeight
+        });
         y -= platformGap;
     }
 }
 
-function update() {
+// --- ИНИЦИАЛИЗАЦИЯ ---
+function init() {
+    createPlatforms();
+}
+
+// --- ИГРОВОЙ ЦИКЛ ---
+function gameLoop() {
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ФОН
-    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+    // Гравитация
+    player.velY += gravity;
+    player.y += player.velY;
+    player.x += player.velX;
 
-    player.velocityY += gravity;
-    player.y += player.velocityY;
-    player.x += player.velocityX;
-
-    if (player.velocityX > 0) player.facing = 1;
-    if (player.velocityX < 0) player.facing = -1;
-
+    // Зацикливание по горизонтали
     if (player.x > canvas.width) player.x = 0;
-    if (player.x < 0) player.x = canvas.width;
+    if (player.x + player.width < 0) player.x = canvas.width;
 
-    platforms.forEach(platform => {
-        platform.update();
+    // Определяем направление
+    if (player.velX > 0) player.facing = 1;
+    if (player.velX < 0) player.facing = -1;
+
+    // Столкновение с платформами
+    platforms.forEach(p => {
 
         if (
-            player.velocityY > 0 &&
-            player.x + player.width > platform.x &&
-            player.x < platform.x + platform.width &&
-            player.y + player.height > platform.y &&
-            player.y + player.height < platform.y + platform.height &&
-            !platform.broken
+            player.velY > 0 &&
+            player.x + player.width > p.x &&
+            player.x < p.x + p.width &&
+            player.y + player.height > p.y &&
+            player.y + player.height < p.y + p.height
         ) {
-            player.velocityY = jumpPower;
-
-            if (platform.y < lastPlatformY || lastPlatformY === 0) {
-                score++;
-                scoreDisplay.innerText = score;
-                lastPlatformY = platform.y;
-            }
-
-            if (platform.type === "break") {
-                platform.broken = true;
-            }
+            player.velY = jumpForce;
+            score++;
+            scoreDisplay.innerText = score;
         }
 
-        platform.draw();
+        ctx.fillStyle = "green";
+        ctx.fillRect(p.x, p.y, p.width, p.height);
     });
 
-    // камера
+    // Камера вверх
     if (player.y < canvas.height / 2) {
+
         let diff = canvas.height / 2 - player.y;
         player.y = canvas.height / 2;
 
-        platforms.forEach(platform => {
-            platform.y += diff;
-            if (platform.y > canvas.height) {
-                platform.y = 0;
-                platform.x = Math.random() * (canvas.width - platformWidth);
+        platforms.forEach(p => {
+            p.y += diff;
+
+            if (p.y > canvas.height) {
+                p.y = 0;
+                p.x = Math.random() * (canvas.width - platformWidth);
             }
         });
     }
 
-    // СПРАЙТ
+    // Рисуем игрока
     ctx.save();
     ctx.translate(player.x + player.width/2, player.y + player.height/2);
     ctx.scale(player.facing, 1);
 
-    let sprite = player.velocityY > 0 ? player_fly : player_stand;
+    let sprite = player.velY > 0 ? playerFly : playerStand;
 
     ctx.drawImage(
         sprite,
@@ -204,49 +192,39 @@ function update() {
 
     ctx.restore();
 
+    // Game Over
     if (player.y > canvas.height) {
         alert("Game Over! Score: " + score);
         location.reload();
     }
 
-    requestAnimationFrame(update);
+    requestAnimationFrame(gameLoop);
 }
 
-// iOS гироскоп
-gyroButton.addEventListener("click", () => {
+// --- ГИРОСКОП ---
+gyroBtn.addEventListener("click", () => {
+
     if (typeof DeviceOrientationEvent.requestPermission === "function") {
+
         DeviceOrientationEvent.requestPermission()
-            .then(permissionState => {
-                if (permissionState === "granted") {
-                    window.addEventListener("deviceorientation", handleOrientation);
-                    gyroButton.style.display = "none";
+            .then(response => {
+                if (response === "granted") {
+                    window.addEventListener("deviceorientation", handleTilt);
+                    gyroBtn.style.display = "none";
                 }
-            })
-            .catch(console.error);
+            });
+
     } else {
-        window.addEventListener("deviceorientation", handleOrientation);
-        gyroButton.style.display = "none";
+        window.addEventListener("deviceorientation", handleTilt);
+        gyroBtn.style.display = "none";
     }
+
 });
 
-function handleOrientation(event) {
-    let tilt = event.gamma;
-    player.velocityX = tilt * 0.3;
+function handleTilt(e) {
+    player.velX = e.gamma * 0.3;
 }
-
-let imagesLoaded = 0;
-
-function checkStart() {
-    imagesLoaded++;
-    if (imagesLoaded === 3) {
-        createPlatforms();
-        update();
-    }
-}
-
-background.onload = checkStart;
-player_stand.onload = checkStart;
-player_fly.onload = checkStart;
 </script>
+
 </body>
 </html>
