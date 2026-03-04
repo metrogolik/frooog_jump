@@ -49,6 +49,9 @@ canvas {
 <canvas id="gameCanvas"></canvas>
 
 <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+    alert("Ошибка: " + message);
+};
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreDisplay = document.getElementById("score");
