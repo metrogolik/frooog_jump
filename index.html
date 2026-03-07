@@ -224,23 +224,11 @@ function update() {
             }
 
             // ставим новую выше неё
-            platform.y = highest - platformGap;
-            let tries = 0;
-            do {
+            if (platform.y > canvas.height) { 
+                platform.y = -platformHeight;
                 platform.x = Math.random() * (canvas.width - platformWidth);
-                tries++;
-            } 
-            while (
-                tries < 10 &&
-                    platforms.some(p =>
-                    p !== platform &&
-                    Math.abs(p.x - platform.x) < platformWidth &&
-                    Math.abs(p.y - platform.y) < platformGap
-                )
-            );
-            platform.broken = false;
-            }
-        });
+                platform.broken = false; }
+            }); 
     }
 
     // Отрисовка персонажа
