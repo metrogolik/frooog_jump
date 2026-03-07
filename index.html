@@ -115,7 +115,7 @@ class Platform {
 
     update() {
         if (this.type === "moving") {
-            this.x += 2 * this.direction;
+            this.x += (2 + difficulty) * this.direction;
             if (this.x <= 0 || this.x + this.width >= canvas.width) {
                 this.direction *= -1;
             }
@@ -146,7 +146,12 @@ function createPlatforms() {
     
     while (y > -platformGap) {
         let x = Math.random() * (canvas.width - platformWidth);
-        let type = Math.random() > 0.8 ? "moving" : (Math.random() > 0.9 ? "break" : "static");
+        let r = Math.random();
+         let type = "static";
+
+        if (r < 0.1 + difficulty * 0.05) type = "moving";
+        else if (r < 0.18 + difficulty * 0.04) type = "break";
+        else if (r < 0.24 + difficulty * 0.03) type = "vanish";
         platforms.push(new Platform(x, y, type));
         y -= platformGap;
     }
@@ -154,7 +159,7 @@ function createPlatforms() {
 
 function update() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    let difficulty = Math.min(score / 500, 3);
     // ФОН: если картинка не загрузилась — рисуем градиент
     if (background.complete && background.naturalHeight !== 0) {
         ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
@@ -235,6 +240,12 @@ function update() {
                 Math.abs(p.y - platform.y) < platformGap
                 )    
             );
+                let r = Math.random();
+                platform.type = "static";
+                
+                if (r < 0.1 + difficulty * 0.05) platform.type = "moving";
+                else if (r < 0.18 + difficulty * 0.04) platform.type = "break";
+                else if (r < 0.24 + difficulty * 0.03) platform.type = "vanish";
             platform.broken = false;
             }
 
