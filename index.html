@@ -213,6 +213,8 @@ function update() {
     // Камера: скроллинг вверх
     if (player.y < canvas.height / 3) {
         let diff = canvas.height / 3 - player.y;
+        score += Math.floor(diff);
+        scoreDisplay.innerText = score;
         player.y = canvas.height / 3;
 
         platforms.forEach(platform => {
