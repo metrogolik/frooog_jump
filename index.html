@@ -225,7 +225,19 @@ function update() {
 
             // ставим новую выше неё
             platform.y = highest - platformGap;
-            platform.x = Math.random() * (canvas.width - platformWidth);
+            let tries = 0;
+            do {
+                platform.x = Math.random() * (canvas.width - platformWidth);
+                tries++;
+            } 
+            while (
+                tries < 10 &&
+                    platforms.some(p =>
+                    p !== platform &&
+                    Math.abs(p.x - platform.x) < platformWidth &&
+                    Math.abs(p.y - platform.y) < platformGap
+                )
+            );
             platform.broken = false;
             }
         });
