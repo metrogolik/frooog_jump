@@ -126,6 +126,7 @@ class Platform {
         if (this.type === "static") ctx.fillStyle = "#4CAF50";
         if (this.type === "moving") ctx.fillStyle = "#FF9800";
         if (this.type === "break") ctx.fillStyle = this.broken ? "#999" : "#f44336";
+        if (this.type === "vanish") ctx.fillStyle = "#9C27B0";
 
         if (!this.broken) {
             ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -196,7 +197,10 @@ function update() {
         ) {
             player.velocityY = jumpPower;
             player.onGround = true;
-                        // Начисление очков за новые платформы
+
+            if (platform.type === "vanish") {
+                platform.broken = true;
+            }
 
             if (platform.type === "break") {
                 platform.broken = true;
