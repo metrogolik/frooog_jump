@@ -118,7 +118,17 @@ let player = {
     facing: 1,
     onGround: false
 };
-
+// ======================================
+// Сброс игрока в начальную позицию
+// ======================================
+function resetPlayer() {
+    player.x = canvas.width / 2;      // по центру
+    player.y = canvas.height - 100;   // немного над дном
+    player.velocityY = 0;
+    player.velocityX = 0;
+    player.onGround = false;
+    player.facing = 1;
+}
 // ======================================
 // Платформы
 // ======================================
