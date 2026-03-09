@@ -414,8 +414,7 @@ canvas.addEventListener("click",function(e){
             gameState="playing";
             score=0;
             scoreDisplay.innerText=score;
-            player.y=canvas.height-100;
-            player.velocityY=0;
+            resetPlayer();
             createPlatforms();
         }
     }
@@ -425,8 +424,7 @@ canvas.addEventListener("click",function(e){
            clickY>canvas.height/2 && clickY<canvas.height/2+100){
             score=0;
             scoreDisplay.innerText=score;
-            player.y=canvas.height-100;
-            player.velocityY=0;
+            resetPlayer();
             createPlatforms();
             gameState="playing";
         }
