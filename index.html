@@ -224,6 +224,8 @@ let y=H()-50
 
 platforms.push(new Platform(W()/2-platformWidth/2,H()-50,"static"))
 
+let hasMoving = false
+let hasBreak = false
 while(y>-platformGap){
 
 let x
@@ -235,11 +237,21 @@ attempts++
 }
 while(overlapsPlatform(x,y)&&attempts<10)
 
-const type = getPlatformType()
+let type = getPlatformType()
+
+if(type === "moving") hasMoving = true
+if(type === "break") hasBreak = true
 
 platforms.push(new Platform(x,y,type))
 
 y-=platformGap
+}
+if(!hasMoving && platforms.length > 2){
+platforms[2].type = "moving"
+}
+
+if(!hasBreak && platforms.length > 3){
+platforms[3].type = "break"
 }
 }
 
