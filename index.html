@@ -150,7 +150,7 @@ update(){
 
 if(this.type==="moving"){
 
-const speed=Math.min(2+score*.002,8)
+const speed = Math.min(2 + score * 0.003, 12)
 
 this.x+=speed*this.direction
 
@@ -199,6 +199,22 @@ return false
 /* =========================
 ГЕНЕРАЦИЯ ПЛАТФОРМ
 ========================= */
+function getPlatformType(){
+
+let difficulty = Math.min(score / 6000, 1)
+
+let staticChance = 0.8 - difficulty * 0.55
+let movingChance = 0.15 + difficulty * 0.25
+let breakChance = 0.05 + difficulty * 0.30
+
+let r = Math.random()
+
+if (r < breakChance) return "break"
+if (r < breakChance + movingChance) return "moving"
+
+return "static"
+}
+
 
 function createPlatforms(){
 
@@ -219,7 +235,7 @@ attempts++
 }
 while(overlapsPlatform(x,y)&&attempts<10)
 
-const type=Math.random()>.8?"moving":(Math.random()>.9?"break":"static")
+const type = getPlatformType()
 
 platforms.push(new Platform(x,y,type))
 
