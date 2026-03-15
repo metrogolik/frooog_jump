@@ -296,14 +296,15 @@ drawBackground()
 ctx.fillStyle="white"
 ctx.textAlign="center"
 
-ctx.font=buttonFont
-ctx.fillText("Приходте на нашу постановку 21 марта в 11:00!",W()/2,H()/2-100)
+ctx.font=gameFont
+ctx.fillText("Приходите на нашу постановку",W()/2,H()/2-120)
+ctx.fillText("21 марта в 11:00",W()/2,H()/2-80)
 
 ctx.font=smallFont
-ctx.fillText("Ваш счет: "+score,W()/2,H()/2-50)
+ctx.fillText("Ваш счет: "+score,W()/2,H()/2-30)
 
 ctx.font=buttonFont
-ctx.fillText("Заново",W()/2,H()/2+50)
+ctx.fillText("Заново",W()/2,H()/2+60)
 }
 
 /* =========================
